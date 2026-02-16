@@ -51,7 +51,7 @@ jobs:
       - name: Patch Source Code
         run: |
           cargo add rustls --features "aws-lc-rs" --package tuic-server
-          sed -i 's/fn main.*{/& rustls::crypto::aws_lc_rs::default_provider().install_default().ok();/' tuic-server/src/main.rs
+          sed -i 's/async fn main.*{/& rustls::crypto::aws_lc_rs::default_provider().install_default().ok();/' tuic-server/src/main.rs
 
       - name: Build Tuic Server
         run: |
