@@ -33,7 +33,7 @@ jobs:
       - id: sha
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Install Dependencies (x86_64)
+      - name: Install Dependencies
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: |
           sudo apt-get update
@@ -48,7 +48,12 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: cargo install cross --locked
 
-      - name: Build Tuic Server (aws-lc-rs)
+      - name: Patch Source Code
+        run: |
+          cargo add rustls --features "aws-lc-rs" --package tuic-server
+          sed -i 's/fn main() {/fn main() { rustls::crypto::aws_lc_rs::default_provider().install_default().ok();/' tuic-server/src/main.rs
+
+      - name: Build Tuic Server
         run: |
           set -euo pipefail
           
@@ -58,12 +63,10 @@ jobs:
              ARCH_NAME="aarch64-linux"
           fi
           
-          FEATURE_FLAGS="--features aws-lc-rs"
-
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
-            cross build --release --bin tuic-server --target ${{ matrix.target }} $FEATURE_FLAGS
+            cross build --release --bin tuic-server --target ${{ matrix.target }}
           else
-            cargo build --release --bin tuic-server --target ${{ matrix.target }} $FEATURE_FLAGS
+            cargo build --release --bin tuic-server --target ${{ matrix.target }}
           fi
           
           BIN_PATH="target/${{ matrix.target }}/release/tuic-server"
@@ -71,7 +74,6 @@ jobs:
           
           NEW_NAME="tuic-server-${ARCH_NAME}"
           cp "$BIN_PATH" "$NEW_NAME"
-          
           strip "$NEW_NAME" 2>/dev/null || true
           
           tar -czf "tuic-server-${ARCH_NAME}-${{ steps.tag.outputs.tag }}.tar.gz" "$NEW_NAME"
@@ -82,9 +84,6 @@ jobs:
           name: Tuic ${{ steps.tag.outputs.tag }}
           overwrite_files: true
           files: tuic-server-*.tar.gz
-          body: |
-            Commit: ${{ steps.sha.outputs.sha }}
-            Build from: https://github.com/Itsusinn/tuic
-            Crypto: aws-lc-rs (Hardcore Mode)
+          body: ${{ steps.sha.outputs.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
