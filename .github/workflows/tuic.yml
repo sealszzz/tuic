@@ -1,4 +1,4 @@
-name: build-tuic
+name: build-tuic-final
 on:
   workflow_dispatch:
   push:
@@ -50,8 +50,8 @@ jobs:
 
       - name: Patch Source Code
         run: |
-          cargo add rustls --features "aws-lc-rs" --package tuic-server
-          sed -i 's/async fn main.*{/& rustls::crypto::aws_lc_rs::default_provider().install_default().ok();/' tuic-server/src/main.rs
+          cargo add rustls --features "aws-lc-rs" --no-default-features --package tuic-server
+          sed -i 's/let cli = Cli::parse();/rustls::crypto::aws_lc_rs::default_provider().install_default().ok(); &/' tuic-server/src/main.rs
 
       - name: Build Tuic Server
         run: |
