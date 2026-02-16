@@ -33,6 +33,12 @@ jobs:
       - id: sha
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Install Dependencies (x86_64)
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake golang perl
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -42,7 +48,7 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: cargo install cross --locked
 
-      - name: Build Tuic Server
+      - name: Build Tuic Server (aws-lc-rs)
         run: |
           set -euo pipefail
           
@@ -52,10 +58,12 @@ jobs:
              ARCH_NAME="aarch64-linux"
           fi
           
+          FEATURE_FLAGS="--features aws-lc-rs"
+
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
-            cross build --release --bin tuic-server --target ${{ matrix.target }}
+            cross build --release --bin tuic-server --target ${{ matrix.target }} $FEATURE_FLAGS
           else
-            cargo build --release --bin tuic-server --target ${{ matrix.target }}
+            cargo build --release --bin tuic-server --target ${{ matrix.target }} $FEATURE_FLAGS
           fi
           
           BIN_PATH="target/${{ matrix.target }}/release/tuic-server"
@@ -63,6 +71,7 @@ jobs:
           
           NEW_NAME="tuic-server-${ARCH_NAME}"
           cp "$BIN_PATH" "$NEW_NAME"
+          
           strip "$NEW_NAME" 2>/dev/null || true
           
           tar -czf "tuic-server-${ARCH_NAME}-${{ steps.tag.outputs.tag }}.tar.gz" "$NEW_NAME"
@@ -76,5 +85,6 @@ jobs:
           body: |
             Commit: ${{ steps.sha.outputs.sha }}
             Build from: https://github.com/Itsusinn/tuic
+            Crypto: aws-lc-rs (Hardcore Mode)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
