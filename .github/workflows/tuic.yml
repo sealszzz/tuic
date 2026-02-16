@@ -51,11 +51,8 @@ jobs:
       - name: Patch Source Code
         run: |
           cargo add rustls --features "aws_lc_rs" --no-default-features --package tuic-server --quiet
-          if grep -q "install_default" tuic-server/src/main.rs; then
-            sed -i 's/rustls::crypto::ring/rustls::crypto::aws_lc_rs/g' tuic-server/src/main.rs
-          else
-            sed -i 's/let cli = Cli::parse();/rustls::crypto::aws_lc_rs::default_provider().install_default().ok(); &/' tuic-server/src/main.rs
-          fi
+          sed -i '/rustls::crypto::ring/d' tuic-server/src/main.rs
+          sed -i 's/#\[cfg(feature = "aws-lc-rs")]//g' tuic-server/src/main.rs
 
       - name: Build Tuic Server
         run: |
