@@ -1,4 +1,4 @@
-name: build-tuic-server
+name: build-tuic
 on:
   workflow_dispatch:
   push:
@@ -18,9 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: Itsusinn/tuic
+          ref: main
           fetch-depth: 1
           fetch-tags: true
-          submodules: true
 
       - id: tag
         run: |
@@ -35,30 +36,45 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+          toolchain: stable 
 
-      - run: cargo install cross --locked
+      - name: Install Cross
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: cargo install cross --locked
 
-      - name: Build tuic-server (GNU)
+      - name: Build Tuic Server
         run: |
           set -euo pipefail
-          cross build --release --target ${{ matrix.target }} -p tuic-server --features jemallocator
-
-          BIN="target/${{ matrix.target }}/release/tuic-server"
-          test -f "$BIN"
-
-          cp "$BIN" tuic-server
-          strip tuic-server 2>/dev/null || true
-
-          ./tuic-server --version >/dev/null 2>&1 || ./tuic-server -V >/dev/null 2>&1 || true
-
-          tar -czf "tuic-server-${{ matrix.target }}-${{ steps.tag.outputs.tag }}.tar.gz" tuic-server
+          
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
+             ARCH_NAME="x86_64-linux"
+          else
+             ARCH_NAME="aarch64-linux"
+          fi
+          
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            cross build --release --bin tuic-server --target ${{ matrix.target }}
+          else
+            cargo build --release --bin tuic-server --target ${{ matrix.target }}
+          fi
+          
+          BIN_PATH="target/${{ matrix.target }}/release/tuic-server"
+          test -f "$BIN_PATH"
+          
+          NEW_NAME="tuic-server-${ARCH_NAME}"
+          cp "$BIN_PATH" "$NEW_NAME"
+          strip "$NEW_NAME" 2>/dev/null || true
+          
+          tar -czf "tuic-server-${ARCH_NAME}-${{ steps.tag.outputs.tag }}.tar.gz" "$NEW_NAME"
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.tag.outputs.tag }}
+          name: Tuic ${{ steps.tag.outputs.tag }}
           overwrite_files: true
           files: tuic-server-*.tar.gz
-          body: ${{ steps.sha.outputs.sha }}
+          body: |
+            Commit: ${{ steps.sha.outputs.sha }}
+            Build from: https://github.com/Itsusinn/tuic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
