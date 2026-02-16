@@ -50,7 +50,8 @@ jobs:
 
       - name: Patch Source Code
         run: |
-          cargo add rustls --features "aws-lc-rs" --no-default-features --package tuic-server
+          cargo add rustls --features "aws_lc_rs" --no-default-features --package tuic-server
+          
           sed -i 's/let cli = Cli::parse();/rustls::crypto::aws_lc_rs::default_provider().install_default().ok(); &/' tuic-server/src/main.rs
 
       - name: Build Tuic Server
