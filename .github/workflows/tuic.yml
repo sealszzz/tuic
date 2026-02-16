@@ -47,9 +47,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
-            cross build --release --target ${{ matrix.target }} -p tuic-server
+            cross build --release --target ${{ matrix.target }} -p tuic-server \
+              --no-default-features --features aws-lc-rs
           else
-            cargo build --release --target ${{ matrix.target }} -p tuic-server
+            cargo build --release --target ${{ matrix.target }} -p tuic-server \
+              --no-default-features --features aws-lc-rs
           fi
 
           BIN="target/${{ matrix.target }}/release/tuic-server"
