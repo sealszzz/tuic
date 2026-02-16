@@ -85,6 +85,8 @@ jobs:
           name: Tuic ${{ steps.tag.outputs.tag }}
           overwrite_files: true
           files: tuic-server-*.tar.gz
-          body: ${{ steps.sha.outputs.sha }}
+          body: |
+            Commit: ${{ steps.sha.outputs.sha }}
+            Build from: https://github.com/Itsusinn/tuic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
