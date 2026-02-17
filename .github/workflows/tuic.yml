@@ -58,12 +58,6 @@ jobs:
         run: |
           set -euo pipefail
           
-          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
-             ARCH_NAME="x86_64-linux"
-          else
-             ARCH_NAME="aarch64-linux"
-          fi
-          
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
             cross build --release --bin tuic-server --target ${{ matrix.target }}
           else
@@ -73,11 +67,10 @@ jobs:
           BIN_PATH="target/${{ matrix.target }}/release/tuic-server"
           test -f "$BIN_PATH"
           
-          NEW_NAME="tuic-server-${ARCH_NAME}"
-          cp "$BIN_PATH" "$NEW_NAME"
-          strip "$NEW_NAME" 2>/dev/null || true
+          cp "$BIN_PATH" tuic-server
+          strip tuic-server 2>/dev/null || true
           
-          tar -czf "tuic-server-${ARCH_NAME}-${{ steps.tag.outputs.tag }}.tar.gz" "$NEW_NAME"
+          tar -czf "tuic-server-${{ matrix.target }}-${{ steps.tag.outputs.tag }}.tar.gz" tuic-server
 
       - uses: softprops/action-gh-release@v2
         with:
