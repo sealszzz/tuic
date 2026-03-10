@@ -31,7 +31,10 @@ jobs:
           echo "tag=v${ver}" >> "$GITHUB_OUTPUT"
 
       - id: sha
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install Dependencies
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -79,7 +82,7 @@ jobs:
           overwrite_files: true
           files: tuic-server-*.tar.gz
           body: |
-            Commit: ${{ steps.sha.outputs.sha }}
+            Commit: ${{ steps.sha.outputs.short_sha }}
             Build from: https://github.com/Itsusinn/tuic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
